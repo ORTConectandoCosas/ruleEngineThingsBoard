@@ -1,6 +1,8 @@
 /* Ejemplo para utilizar la comunicación con thingboards y el motor de Reglas con nodeMCU v2
  *  Gastón Mousqués
- *  Basado en varios ejemplos de la documentación de  https://thingsboard.io
+ *  Basado en varios ejemplos de la documentación de  https://thingsboard.io  
+ *  https://thingsboard.io/docs/user-guide/rule-engine-2-0/re-getting-started/
+ *  https://thingsboard.io/docs/user-guide/rule-engine-2-0/overview/#tutorials
  *  
  */
 
@@ -10,12 +12,11 @@
 #include <ArduinoJson.h>
 
 
-//***************MODIFICAR PARA SU PROYECTO *********************
+//***************CONEXION a WiFI y Thingsboard - live demo server  - MODIFICAR PARA SU PROYECTO *********************
 //  configuración datos wifi 
 // decomentar el define y poner los valores de su red y de su dispositivo
 #define WIFI_AP "SSID RED"
 #define WIFI_PASSWORD "PASSWORD RED"
-
 
 
 //  configuración datos thingsboard
@@ -23,7 +24,8 @@
 #define NODE_TOKEN "TOKEN DISPOSITIVO"   //Token que genera Thingboard para dispositivo cuando lo crearon
 
 
-//***************NO MODIFICAR *********************
+
+//*************** Declaración de Servidor y Topicos -  NO MODIFICAR *********************
 char thingsboardServer[] = "demo.thingsboard.io";
 
 /*definir topicos.
@@ -42,20 +44,23 @@ PubSubClient client(wifiClient);
 
 // declarar variables control loop (para no usar delay() en loop
 unsigned long lastSend;
+
+//Modificar la siguiente varaible para regular el tiempo de envio de datos al servidor en mls.
 const int elapsedTime = 2000; // tiempo transcurrido entre envios al servidor
 
 
-//***************MODIFICAR PARA SU PROYECTO *********************
-// configuración sensores que utilizan
+//*************** Declaración de varaibles para sensores - MODIFICAR PARA SU PROYECTO *********************
+// Declarar e Inicializar sensores para su proyecto
 int pinLDR = A0;
 int pinLED = D0;
-// Declarar e Inicializar sensores.
 
 
+/*
+* ************************* Funciones Setup y loop - MODIFICAR PARA SU PROYECTO *********************
+* función setup micro
+* 
+*/
 
-//
-//************************* Funciones Setup y loop *********************
-// función setup micro
 void setup()
 {
   Serial.begin(9600);
@@ -66,7 +71,7 @@ void setup()
 
   // agregado para recibir callbacks
   client.setCallback(on_message);
-   
+
   lastSend = 0; // para controlar cada cuanto tiempo se envian datos
 
 
@@ -75,7 +80,12 @@ void setup()
   delay(10);
 }
 
-// función loop micro
+/*
+* ************************* Funciones Setup y loop - MODIFICAR PARA SU PROYECTO *********************
+* función loop - aquí se llama el metodo que recolecta los datos y envia al servidor
+* 
+*/
+
 void loop()
 {
   if ( !client.connected() ) {
@@ -84,13 +94,15 @@ void loop()
 
   if ( millis() - lastSend > elapsedTime ) { // Update and send only after 1 seconds
     
-    // FUNCION DE TELEMETRIA para enviar datos a thingsboard
+    /* 
+     *  FUNCION DE TELEMETRIA para enviar datos a thingsboard
+     */
     getAndSendTelemetryData();   // FUNCION QUE ENVIA INFORMACIÓN DE TELEMETRIA
     
     lastSend = millis();
   }
 
-  client.loop();
+  client.loop();   //No borrar, permite que se realicen tareas de la biblioteca de MQTT
 }
 
 //***************MODIFICAR PARA SU PROYECTO *********************
@@ -112,11 +124,14 @@ void getAndSendTelemetryData()
   String valorLDR = String(rawLDR);
 
 
-  // Preparar el payload del JSON payload, a modo de ejemplo el mensaje se arma utilizando la clase String. esto se puede hacer con
-  // la biblioteca ArduinoJson (ver on message)
-  // el formato es {key"value, Key: value, .....}
-  // en este caso seria {"valorLDR": valor_leidoLDR}
-  //
+  /* 
+   *  
+   * Preparar el payload del JSON payload, a modo de ejemplo el mensaje se arma utilizando la clase String. esto se puede hacer con
+   * la biblioteca ArduinoJson (ver on message)
+   * el formato es {key"value, Key: value, .....}
+   * en este caso seria {"valorLDR": valor_leidoLDR}
+  */
+
   String payload = "{";
   payload += "\"valorLDR\":"; payload += valorLDR; payload += "}";
 
@@ -131,7 +146,7 @@ void getAndSendTelemetryData()
 }
 
 
-//***************MODIFICAR PARA SU PROYECTO *********************
+//*************** ON_MESSAGE - Callback para procesar mensajes enviados desde el servior - MODIFICAR PARA SU PROYECTO *********************
 /* 
  *  Este callback se llama cuando se utilizan widgets de control que envian mensajes por el topico requestTopic
  *  Notar que en la función de reconnect se realiza la suscripción al topico de request
@@ -185,8 +200,7 @@ void on_message(const char* topic, byte* payload, unsigned int length)
  
 }
 
-//***************MODIFICAR PARA SU PROYECTO PARA PROCESAR UN COMANDO *********************
-
+//***************Metodos para Procesar Comandos - MODIFICAR PARA SU PROYECTO PARA PROCESAR UN COMANDO *********************
 /*
  * función que "abre" la puerta (simulada).
  * En su proyecto habria que programar lo que hace el dispositivo al recibir el comando
@@ -201,7 +215,7 @@ void setLightIntensity(int value)
 
 
 
-//***************NO MODIFICAR *********************
+//***************CONECCION CON WiFi y Servidor - NO MODIFICAR *********************
 /*
  * funcion para reconectarse al servidor de thingsboard y suscribirse a los topicos de RPC y Atributos
  */
